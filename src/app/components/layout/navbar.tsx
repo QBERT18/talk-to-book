@@ -20,7 +20,7 @@ export default function Navbar() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         {/* Logo */}
         <Link
-          href="/"
+          href="/public"
           className="text-lg font-bold text-primary hover:opacity-80 transition-opacity"
         >
           TalkToBook
