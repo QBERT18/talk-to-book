@@ -8,7 +8,7 @@ import { Menu01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 
 const navLinks = [
   { label: "Homepage", href: "/" },
-  { label: "New", href: "/new" },
+  { label: "New", href: "/books/new" },
 ];
 
 export default function Navbar() {
