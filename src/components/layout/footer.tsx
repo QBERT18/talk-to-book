@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
             <Link
-              href="/"
+              href="/public"
               className="text-lg font-bold text-primary hover:opacity-80 transition-opacity"
             >
               TalkToBook
