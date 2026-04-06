@@ -24,6 +24,12 @@ export default async function EditBookPage({ params }: EditBookPageProps) {
     title: book.title,
     author: book.author,
     description: book.description,
+    // Only expose a cover URL if the document actually has bytes — legacy books
+    // may carry coverName/coverSize metadata without any coverContent.
+    existingCoverUrl:
+      book.coverContent != null
+        ? `/api/books/${book._id.toString()}/cover`
+        : undefined,
   };
 
   return <BookForm initialData={initialData} />;

@@ -39,6 +39,7 @@ export interface BookFormProps {
         title: string;
         author?: string;
         description?: string;
+        existingCoverUrl?: string;
     }
 }
 
@@ -260,6 +261,7 @@ export default function BookForm({ initialData }: BookFormProps) {
                                 control={form.control}
                                 render={({ field: { onChange, value, ref, ...field }, fieldState }) => {
                                     const file = (typeof window !== "undefined" && value instanceof FileList) ? value[0] : null
+                                    const showExistingCover = !file && !!initialData?.existingCoverUrl
                                     return (
                                         <Field data-invalid={fieldState.invalid}>
                                             <FieldLabel htmlFor="book-cover">
@@ -267,7 +269,7 @@ export default function BookForm({ initialData }: BookFormProps) {
                                             </FieldLabel>
                                             <label
                                                 htmlFor="book-cover"
-                                                className="relative flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-input bg-input/10 transition-colors hover:bg-input/20 aria-invalid:border-destructive"
+                                                className="relative flex min-h-32 w-full cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-input bg-input/10 p-3 transition-colors hover:bg-input/20 aria-invalid:border-destructive"
                                                 aria-invalid={fieldState.invalid}
                                             >
                                                 <input
@@ -282,18 +284,32 @@ export default function BookForm({ initialData }: BookFormProps) {
                                                     className="sr-only"
                                                     onChange={(e) => onChange(e.target.files)}
                                                 />
-                                                <HugeiconsIcon
-                                                    icon={Image01Icon}
-                                                    className="mb-2 size-8 text-muted-foreground"
-                                                />
-                                                <span className="text-sm font-medium text-muted-foreground">
-                                                    {file ? file.name : (initialData?.id ? "Click to replace cover" : "Click to upload cover image")}
-                                                </span>
-                                                {file && (
-                                                    <span className="mt-1 text-xs text-muted-foreground/60">
-                                                        {(file.size / (1024 * 1024)).toFixed(2)} MB
-                                                    </span>
+                                                {showExistingCover && (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img
+                                                        src={initialData!.existingCoverUrl}
+                                                        alt="Current book cover"
+                                                        className="h-24 w-18 shrink-0 rounded-md border bg-muted object-cover"
+                                                    />
                                                 )}
+                                                <div className="flex flex-1 flex-col items-center justify-center text-center">
+                                                    <HugeiconsIcon
+                                                        icon={Image01Icon}
+                                                        className="mb-2 size-8 text-muted-foreground"
+                                                    />
+                                                    <span className="text-sm font-medium text-muted-foreground">
+                                                        {file
+                                                            ? file.name
+                                                            : showExistingCover
+                                                                ? "Click to replace cover"
+                                                                : (initialData?.id ? "Click to upload cover" : "Click to upload cover image")}
+                                                    </span>
+                                                    {file && (
+                                                        <span className="mt-1 text-xs text-muted-foreground/60">
+                                                            {(file.size / (1024 * 1024)).toFixed(2)} MB
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </label>
                                             {fieldState.invalid && (
                                                 <FieldError errors={[fieldState.error]} />
