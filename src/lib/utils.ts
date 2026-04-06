@@ -8,6 +8,8 @@ export function cn(...inputs: ClassValue[]) {
 export function slugify(text: string) {
   return text
     .toString()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim()
     .replace(/\s+/g, "-") // Replace spaces with -

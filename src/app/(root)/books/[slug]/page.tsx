@@ -1,5 +1,5 @@
 import dbConnect from "@/lib/mongodb";
-import Book, { IBook } from "@/models/Book";
+import Book, { IBookData } from "@/models/Book";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,7 +16,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   const { slug } = await params;
 
   await dbConnect();
-  const book = await Book.findOne({ slug }).lean() as unknown as IBook;
+  const book = await Book.findOne({ slug }).lean<IBookData | null>();
 
   if (!book) {
     notFound();

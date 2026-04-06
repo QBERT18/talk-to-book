@@ -45,6 +45,8 @@ export interface BookFormProps {
 export default function BookForm({ initialData }: BookFormProps) {
     const router = useRouter()
     const [isUploading, setIsUploading] = React.useState(false)
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
+    const coverInputRef = React.useRef<HTMLInputElement>(null)
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -53,6 +55,11 @@ export default function BookForm({ initialData }: BookFormProps) {
             description: initialData?.description || "",
         },
     })
+    const handleReset = () => {
+        form.reset()
+        if (fileInputRef.current) fileInputRef.current.value = ""
+        if (coverInputRef.current) coverInputRef.current.value = ""
+    }
 
     async function onSubmit(data: z.infer<typeof formSchema>) {
         console.log("Client-side onSubmit started with data:", data)
@@ -204,24 +211,28 @@ export default function BookForm({ initialData }: BookFormProps) {
                             <Controller
                                 name="file"
                                 control={form.control}
-                                render={({ field: { onChange, value, ...field }, fieldState }) => {
+                                render={({ field: { onChange, value, ref, ...field }, fieldState }) => {
                                     const file = (typeof window !== "undefined" && value instanceof FileList) ? value[0] : null
                                     return (
                                         <Field data-invalid={fieldState.invalid}>
                                             <FieldLabel htmlFor="book-file">
                                                 PDF File {initialData?.id && "(Optional)"}
                                             </FieldLabel>
-                                            <div
+                                            <label
+                                                htmlFor="book-file"
                                                 className="relative flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-input bg-input/10 transition-colors hover:bg-input/20 aria-invalid:border-destructive"
-                                                onClick={() => document.getElementById("book-file")?.click()}
                                                 aria-invalid={fieldState.invalid}
                                             >
                                                 <input
                                                     {...field}
+                                                    ref={(el) => {
+                                                        ref(el)
+                                                        fileInputRef.current = el
+                                                    }}
                                                     type="file"
                                                     accept=".pdf,application/pdf"
                                                     id="book-file"
-                                                    className="hidden"
+                                                    className="sr-only"
                                                     onChange={(e) => onChange(e.target.files)}
                                                 />
                                                 <HugeiconsIcon
@@ -236,7 +247,7 @@ export default function BookForm({ initialData }: BookFormProps) {
                                                         {(file.size / (1024 * 1024)).toFixed(2)} MB
                                                     </span>
                                                 )}
-                                            </div>
+                                            </label>
                                             {fieldState.invalid && (
                                                 <FieldError errors={[fieldState.error]} />
                                             )}
@@ -247,24 +258,28 @@ export default function BookForm({ initialData }: BookFormProps) {
                             <Controller
                                 name="cover"
                                 control={form.control}
-                                render={({ field: { onChange, value, ...field }, fieldState }) => {
+                                render={({ field: { onChange, value, ref, ...field }, fieldState }) => {
                                     const file = (typeof window !== "undefined" && value instanceof FileList) ? value[0] : null
                                     return (
                                         <Field data-invalid={fieldState.invalid}>
                                             <FieldLabel htmlFor="book-cover">
                                                 Book Cover {initialData?.id && "(Optional)"}
                                             </FieldLabel>
-                                            <div
+                                            <label
+                                                htmlFor="book-cover"
                                                 className="relative flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-input bg-input/10 transition-colors hover:bg-input/20 aria-invalid:border-destructive"
-                                                onClick={() => document.getElementById("book-cover")?.click()}
                                                 aria-invalid={fieldState.invalid}
                                             >
                                                 <input
                                                     {...field}
+                                                    ref={(el) => {
+                                                        ref(el)
+                                                        coverInputRef.current = el
+                                                    }}
                                                     type="file"
                                                     accept="image/jpeg,image/png,image/webp"
                                                     id="book-cover"
-                                                    className="hidden"
+                                                    className="sr-only"
                                                     onChange={(e) => onChange(e.target.files)}
                                                 />
                                                 <HugeiconsIcon
@@ -279,7 +294,7 @@ export default function BookForm({ initialData }: BookFormProps) {
                                                         {(file.size / (1024 * 1024)).toFixed(2)} MB
                                                     </span>
                                                 )}
-                                            </div>
+                                            </label>
                                             {fieldState.invalid && (
                                                 <FieldError errors={[fieldState.error]} />
                                             )}
@@ -292,7 +307,7 @@ export default function BookForm({ initialData }: BookFormProps) {
                 </CardContent>
                 <CardFooter>
                     <Field orientation="horizontal">
-                        <Button type="button" variant="outline" onClick={() => form.reset()}>
+                        <Button type="button" variant="outline" onClick={handleReset}>
                             Reset
                         </Button>
                         <Button type="submit" form="book-upload-form" disabled={isUploading}>

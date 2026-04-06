@@ -1,25 +1,26 @@
 "use server";
 
+import mongoose from "mongoose";
 import dbConnect from "@/lib/mongodb";
-import Book, { BookChunk } from "@/models/Book";
+import Book, { BookChunk, IBook } from "@/models/Book";
 import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
 const CHUNK_SIZE = 512 * 1024; // 512KB per chunk
 
 export async function uploadBookAction(formData: FormData) {
-  console.log("=== SERVER ACTION: uploadBookAction EXECUTING ===");
   try {
-    console.log("Starting uploadBookAction...");
     await dbConnect();
-    console.log("Connected to database for upload.");
 
-    const title = formData.get("title") as string;
+    const rawTitle = formData.get("title");
+    const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
     const author = formData.get("author") as string;
     const description = formData.get("description") as string;
-    
-    console.log("FormData retrieved:", { title, author });
-    
+
+    if (!title) {
+      return { success: false, error: "Title is required" };
+    }
+
     // In Next.js server actions, files can be received via FormData
     const file = formData.get("file") as File | null;
     const cover = formData.get("cover") as File | null;
@@ -31,19 +32,6 @@ export async function uploadBookAction(formData: FormData) {
       return { success: false, error: "Valid cover image is required" };
     }
 
-    // Check if the collection exists by attempting a count or similar
-    // This helps in cases where Mongoose attempts an index check on a non-existent namespace
-    // though Mongoose usually handles this. If it fails with NamespaceNotFound, we might need
-    // to ensure the collection is created.
-    
-    try {
-      if (Book.db) {
-         console.log("Ensuring collection 'books' exists. DB Name:", Book.db.name);
-      }
-    } catch (error) {
-       console.log("Collection check log:", error instanceof Error ? error.message : error);
-    }
-    
     const baseSlug = slugify(title);
     let finalSlug = baseSlug;
     
@@ -72,8 +60,6 @@ export async function uploadBookAction(formData: FormData) {
       existingBook = await Book.findOne({ slug: finalSlug });
     }
 
-    console.log("Creating book document with slug:", finalSlug);
-    
     // Read file and split into chunks
     const fileArrayBuffer = await file.arrayBuffer();
     const fileBuffer = Buffer.from(fileArrayBuffer);
@@ -82,8 +68,6 @@ export async function uploadBookAction(formData: FormData) {
     // Read cover image
     const coverArrayBuffer = await cover.arrayBuffer();
     const coverBuffer = Buffer.from(coverArrayBuffer);
-    
-    console.log("Cover buffer created, size:", coverBuffer.length);
 
     const bookData = {
       title,
@@ -100,35 +84,21 @@ export async function uploadBookAction(formData: FormData) {
       coverContent: coverBuffer,
     };
 
-    console.log("Saving bookData to DB (keys):", Object.keys(bookData));
-    
     const newBook = await Book.create(bookData);
-    console.log("Book created successfully, ID:", newBook._id);
-    
-    // Check if coverContent is actually on the returned Mongoose document
-    console.log("Mongoose document keys:", Object.keys(newBook.toObject()));
-    console.log("Saved book coverContent exists in result:", !!newBook.coverContent);
-    if (newBook.coverContent) {
-      console.log("Saved book coverContent size:", newBook.coverContent.length);
-    } else {
-      console.warn("WARNING: coverContent is MISSING in the created document!");
-    }
 
-    // Save chunks
-    console.log(`Saving ${totalChunks} chunks...`);
-    for (let i = 0; i < totalChunks; i++) {
+    // Save chunks in bulk
+    const chunks = Array.from({ length: totalChunks }, (_, i) => {
       const start = i * CHUNK_SIZE;
       const end = Math.min(start + CHUNK_SIZE, fileBuffer.length);
-      const chunkData = fileBuffer.subarray(start, end);
-      
-      await BookChunk.create({
+      const chunkData = Buffer.from(fileBuffer.subarray(start, end));
+      return {
         bookId: newBook._id,
         chunkNumber: i,
         content: chunkData,
         size: chunkData.length,
-      });
-    }
-    console.log("All chunks saved.");
+      };
+    });
+    await BookChunk.insertMany(chunks);
 
     revalidatePath("/");
     revalidatePath(`/books/${finalSlug}`);
@@ -149,14 +119,18 @@ export async function uploadBookAction(formData: FormData) {
 }
 
 export async function updateBookAction(bookId: string, formData: FormData) {
-  console.log("=== SERVER ACTION: updateBookAction EXECUTING ===");
   try {
     await dbConnect();
-    
-    const title = formData.get("title") as string;
+
+    const rawTitle = formData.get("title");
+    const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
     const author = formData.get("author") as string;
     const description = formData.get("description") as string;
-    
+
+    if (!title) {
+      return { success: false, error: "Title is required" };
+    }
+
     const file = formData.get("file") as File | null;
     const cover = formData.get("cover") as File | null;
 
@@ -195,22 +169,28 @@ export async function updateBookAction(bookId: string, formData: FormData) {
       updateData.fileSize = file.size;
       updateData.chunksCount = totalChunks;
 
-      // Delete old chunks
-      await BookChunk.deleteMany({ bookId: existingBook._id });
-
-      // Save new chunks
-      console.log(`Updating with ${totalChunks} new chunks...`);
-      for (let i = 0; i < totalChunks; i++) {
+      const newChunks = Array.from({ length: totalChunks }, (_, i) => {
         const start = i * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, fileBuffer.length);
-        const chunkData = fileBuffer.subarray(start, end);
-        
-        await BookChunk.create({
+        const chunkData = Buffer.from(fileBuffer.subarray(start, end));
+        return {
           bookId: existingBook._id,
           chunkNumber: i,
           content: chunkData,
           size: chunkData.length,
+        };
+      });
+
+      // Atomically replace the existing chunks: delete + insert in one transaction
+      // so a failure mid-insert cannot leave the book with zero chunks.
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await BookChunk.deleteMany({ bookId: existingBook._id }, { session });
+          await BookChunk.insertMany(newChunks, { session });
         });
+      } finally {
+        await session.endSession();
       }
     }
 

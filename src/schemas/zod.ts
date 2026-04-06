@@ -3,7 +3,7 @@ import * as z from "zod"
 const isClient = typeof window !== "undefined";
 
 export const formSchema = z.object({
-    title: z.string().min(1, "Title is required").max(300, "Title is too long"),
+    title: z.string().trim().min(1, "Title is required").max(300, "Title is too long"),
     author: z.string().max(200, "Author name is too long").optional(),
     description: z.string().max(2000, "Description is too long").optional(),
     file: z

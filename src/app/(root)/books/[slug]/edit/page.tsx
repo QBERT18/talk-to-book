@@ -1,5 +1,5 @@
 import dbConnect from "@/lib/mongodb";
-import Book, { IBook } from "@/models/Book";
+import Book, { IBookData } from "@/models/Book";
 import { notFound } from "next/navigation";
 import BookForm, { BookFormProps } from "@/components/book-form";
 
@@ -13,7 +13,7 @@ export default async function EditBookPage({ params }: EditBookPageProps) {
   const { slug } = await params;
 
   await dbConnect();
-  const book = await Book.findOne({ slug }).lean() as unknown as IBook;
+  const book = await Book.findOne({ slug }).lean<IBookData | null>();
 
   if (!book) {
     notFound();

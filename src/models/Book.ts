@@ -1,5 +1,28 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export interface IBookData {
+  _id: mongoose.Types.ObjectId;
+  title: string;
+  slug: string;
+  author?: string;
+  description?: string;
+  fileName: string;
+  fileType: "pdf";
+  fileSize: number;
+  chunksCount?: number;
+  coverName?: string;
+  coverType?: string;
+  coverSize?: number;
+  coverContent?: Buffer;
+  fileId?: string;
+  coverId?: string;
+  pageCount?: number;
+  language?: string;
+  errorMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IBook extends Document {
   title: string;
   slug: string;

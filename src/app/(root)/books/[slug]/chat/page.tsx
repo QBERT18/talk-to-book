@@ -151,6 +151,7 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask something about the book..."
+            aria-label="Ask about the book"
             className="flex-1 min-h-[44px] max-h-32 p-3 pr-12 rounded-xl border bg-muted/50 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-sm"
             rows={1}
             onKeyDown={(e) => {
@@ -163,6 +164,7 @@ export default function ChatPage() {
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
+            aria-label="Send message"
             className="absolute right-2 bottom-2 p-1.5 bg-primary text-primary-foreground rounded-lg disabled:opacity-50 transition-opacity"
           >
             <HugeiconsIcon icon={SentIcon} size={20} />
