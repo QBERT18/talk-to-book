@@ -5,6 +5,8 @@ import Book, { IBookData } from "@/models/Book";
 
 type BookListItem = Omit<IBookData, "coverContent"> & { hasCover: boolean };
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   await dbConnect();
   // Aggregation rather than .find() so we can compute hasCover from the

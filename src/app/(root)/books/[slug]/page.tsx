@@ -12,6 +12,8 @@ interface BookDetailPageProps {
   }>;
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function BookDetailPage({ params }: BookDetailPageProps) {
   const { slug } = await params;
 

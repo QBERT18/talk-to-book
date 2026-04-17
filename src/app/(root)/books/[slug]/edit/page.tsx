@@ -9,6 +9,8 @@ interface EditBookPageProps {
   }>;
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function EditBookPage({ params }: EditBookPageProps) {
   const { slug } = await params;
 
